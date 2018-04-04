@@ -33,6 +33,7 @@ class CalendarList extends Component {
 
     // When true, the calendar list scrolls to top when the status bar is tapped. Default = true
     scrollsToTop: PropTypes.bool,
+
     // Enable or disable paging on scroll
     pagingEnabled: PropTypes.bool,
 
@@ -51,8 +52,10 @@ class CalendarList extends Component {
     this.pastScrollRange = props.pastScrollRange === undefined ? 50 : props.pastScrollRange;
     this.futureScrollRange = props.futureScrollRange === undefined ? 50 : props.futureScrollRange;
     this.style = styleConstructor(props.theme);
+
     this.calendarHeight = props.calendarHeight || calendarHeight;
     this.calendarWidth = props.calendarWidth || width;
+
     const rows = [];
     const texts = [];
     const date = parseDate(props.current) || XDate();
@@ -171,7 +174,7 @@ class CalendarList extends Component {
   }
 
   getItemLayout(data, index) {
-    return {length: this.props.horizontal ? this.props.calendarWidth || this.calendarWidth : this.calendarHeight, offset: (this.props.horizontal ? this.props.calendarWidth || this.calendarWidth : this.calendarHeight) * index, index};
+    return {length: this.props.horizontal ? this.calendarWidth : calendarHeight, offset: (this.props.horizontal ? this.calendarWidth : calendarHeight) * index, index};
   }
 
   getMonthIndex(month) {
