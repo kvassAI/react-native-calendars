@@ -33,7 +33,6 @@ class CalendarList extends Component {
 
     // When true, the calendar list scrolls to top when the status bar is tapped. Default = true
     scrollsToTop: PropTypes.bool,
-
     // Enable or disable paging on scroll
     pagingEnabled: PropTypes.bool,
 
@@ -78,8 +77,8 @@ class CalendarList extends Component {
       openDate: date,
       initialized: false
     };
-    this.lastScrollPosition = -1000;
-    
+
+    this.getItemLayout = this.getItemLayout.bind(this);
     this.onViewableItemsChangedBound = this.onViewableItemsChanged.bind(this);
     this.renderCalendarBound = this.renderCalendar.bind(this);
     this.getItemLayout = this.getItemLayout.bind(this);
