@@ -74,7 +74,7 @@ class Calendar extends Component {
     onPressArrowLeft: PropTypes.func,
     // Handler which gets executed when press arrow icon left. It receive a callback can go next month
     onPressArrowRight: PropTypes.func,
-    // Show/hide month indicator
+    //   More control over show indicator
     showLoadingIndicator: PropTypes.bool,
   };
 
@@ -251,6 +251,8 @@ class Calendar extends Component {
           !(this.props.markedDates && this.props.markedDates[lastMonthOfDay])) {
         indicator = true;
       }
+    } else {
+      indicator = this.props.showLoadingIndicator;
     }
     else if (this.props.showLoadingIndicator) {
       indicator = this.props.showLoadingIndicator;

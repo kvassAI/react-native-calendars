@@ -48,6 +48,9 @@ class CalendarList extends Component {
     // When true, the calendar list scrolls to top when the status bar is tapped. Default = true
     scrollsToTop: PropTypes.bool,
 
+    //  Whether to show the loading indicator
+    showLoadingIndicator: PropTypes.bool,
+
     // Enable or disable paging on scroll
     pagingEnabled: PropTypes.bool,
 
@@ -233,6 +236,7 @@ class CalendarList extends Component {
         pagingEnabled={this.props.pagingEnabled && !this.props.calendarWidth || false}
         onViewableItemsChanged={this.onViewableItemsChangedBound}
         renderItem={this.renderCalendarBound}
+        showLoadingIndicator={this.props.showLoadingIndicator}
         showsVerticalScrollIndicator={this.props.showScrollIndicator !== undefined ? this.props.showScrollIndicator : false}
         showsHorizontalScrollIndicator={this.props.showScrollIndicator !== undefined ? this.props.showScrollIndicator : false}
         scrollEnabled={this.props.scrollingEnabled !== undefined ? this.props.scrollingEnabled : true}
