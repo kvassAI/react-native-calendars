@@ -15,6 +15,20 @@ const calendarHeight = 360;
 
 const {width} = Dimensions.get('window');
 
+// TODO Two issues are considered here:
+// 1: Some devices have weird width outputed by RN, such as Nexus x5 => width: 411.42857142857144
+// The assumption is that this causes wrong calculations on scrollOffsett and initialScroll positions, which breaks with onViewableItemsChanged
+// 2: `initialScrollIndex` appears to not work properly. It causes for the previous month to not be rendered.
+// This could be as well related to the wrong calculations. See 1.
+// Some github issues to be followed that might fix the issue:
+// => https://github.com/facebook/react-native/issues/18743
+// => https://github.com/facebook/react-native/issues/18104
+// As solution, we set viewabilityConfig to fix issue 1. For #2 we set the month -1 on view load and then manually force it to go to the correct index. This apparatently renders it correctly.
+
+const viewabilityConfig = {
+  itemVisiblePercentThreshold: 50,
+}
+
 class CalendarList extends Component {
   static propTypes = {
     ...Calendar.propTypes,
@@ -56,7 +70,9 @@ class CalendarList extends Component {
     this.calendarHeight = props.calendarHeight || calendarHeight;
     this.calendarWidth = props.calendarWidth || width;
 
-    const rows = [];
+    this.rows = [];
+    this.hasScrolled = false;
+
     const texts = [];
     const date = parseDate(props.current) || XDate();
     for (let i = 0; i <= this.pastScrollRange + this.futureScrollRange; i++) {
@@ -68,14 +84,14 @@ class CalendarList extends Component {
        * If `this.pastScrollRange` is `undefined` it's equal to `false` or 0 in next condition.
        */
       if (this.pastScrollRange - 1 <= i && i <= this.pastScrollRange + 1 || !this.pastScrollRange && i <= this.pastScrollRange + 2) {
-        rows.push(rangeDate);
+        this.rows.push(rangeDate);
       } else {
-        rows.push(rangeDateStr);
+        this.rows.push(rangeDateStr);
       }
     }
 
     this.state = {
-      rows,
+      rows: [...this.rows],
       texts,
       openDate: date,
       initialized: false
@@ -120,53 +136,72 @@ class CalendarList extends Component {
       this.scrollToMonth(nextCurrent);
     }
 
-    const rowclone = this.state.rows;
+    const rowclone = [...this.rows];
     const newrows = [];
+    const texts = [...this.state.texts];
+
     for (let i = 0; i < rowclone.length; i++) {
-      let val = this.state.texts[i];
+      let val = texts[i];
       if (rowclone[i].getTime) {
         val = rowclone[i].clone();
         val.propbump = rowclone[i].propbump ? rowclone[i].propbump + 1 : 1;
       }
       newrows.push(val);
     }
+
+    this.rows = newrows;
     this.setState({
-      rows: newrows
+      rows: newrows,
     });
   }
 
   onViewableItemsChanged({viewableItems}) {
-    function rowIsCloseToViewable(index, distance) {
-      for (let i = 0; i < viewableItems.length; i++) {
-        if (Math.abs(index - parseInt(viewableItems[i].index)) <= distance) {
-          return true;
+    if (viewableItems.length > 0) {
+      function rowIsCloseToViewable(index, distance) {
+        for (let i = 0; i < viewableItems.length; i++) {
+          if (Math.abs(index - parseInt(viewableItems[i].index)) <= distance) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      // Hack to force next month, fix issue with missing previous month on loading,
+      if (!this.hasScrolled) {
+        this.listView.scrollToIndex({animated: false, index: this.getMonthIndex(this.state.openDate)});
+      }
+
+      const rowclone = [ ...this.rows];
+      const texts = [...this.state.texts];
+      const newrows = [];
+      const visibleMonths = [];
+      for (let i = 0; i < rowclone.length; i++) {
+        let val = rowclone[i];
+        const rowShouldBeRendered = rowIsCloseToViewable(i, 1);
+        if (rowShouldBeRendered && !rowclone[i].getTime) {
+          val = this.state.openDate.clone().addMonths(i - this.pastScrollRange, true);
+        } else if (!rowShouldBeRendered) {
+          val = texts[i];
+        }
+        newrows.push(val);
+        if (rowIsCloseToViewable(i, 0)) {
+          if (this.hasScrolled) {
+            visibleMonths.push(xdateToData(val));
+          }
         }
       }
-      return false;
-    }
 
-    const rowclone = this.state.rows;
-    const newrows = [];
-    const visibleMonths = [];
-    for (let i = 0; i < rowclone.length; i++) {
-      let val = rowclone[i];
-      const rowShouldBeRendered = rowIsCloseToViewable(i, 1);
-      if (rowShouldBeRendered && !rowclone[i].getTime) {
-        val = this.state.openDate.clone().addMonths(i - this.pastScrollRange, true);
-      } else if (!rowShouldBeRendered) {
-        val = this.state.texts[i];
+      if (this.props.onVisibleMonthsChange) {
+        this.props.onVisibleMonthsChange(visibleMonths);
       }
-      newrows.push(val);
-      if (rowIsCloseToViewable(i, 0)) {
-        visibleMonths.push(xdateToData(val));
-      }
+
+      this.rows = newrows;
+      this.hasScrolled = true;
+
+      this.setState({
+        rows: newrows,
+      });
     }
-    if (this.props.onVisibleMonthsChange) {
-      this.props.onVisibleMonthsChange(visibleMonths);
-    }
-    this.setState({
-      rows: newrows
-    });
   }
 
   renderCalendar({item}) {
@@ -188,12 +223,12 @@ class CalendarList extends Component {
         ref={(c) => this.listView = c}
         //scrollEventThrottle={1000}
         style={[this.style.container, this.props.style]}
-        initialListSize={this.pastScrollRange * this.futureScrollRange + 1}
+        // initialListSize={this.pastScrollRange * this.futureScrollRange + 1}
         data={this.state.rows}
         //snapToAlignment='start'
         //snapToInterval={this.calendarHeight}
         removeClippedSubviews={Platform.OS === 'android' ? false : true}
-        pageSize={1}
+        // pageSize={1}
         horizontal={this.props.horizontal || false}
         pagingEnabled={this.props.pagingEnabled && !this.props.calendarWidth || false}
         onViewableItemsChanged={this.onViewableItemsChangedBound}
@@ -202,8 +237,9 @@ class CalendarList extends Component {
         showsHorizontalScrollIndicator={this.props.showScrollIndicator !== undefined ? this.props.showScrollIndicator : false}
         scrollEnabled={this.props.scrollingEnabled !== undefined ? this.props.scrollingEnabled : true}
         keyExtractor={(item, index) => String(index)}
-        initialScrollIndex={this.state.openDate ? this.getMonthIndex(this.state.openDate) : false}
+        initialScrollIndex={this.state.openDate ? this.getMonthIndex(this.state.openDate) - 1 : false}
         getItemLayout={this.getItemLayout}
+        viewabilityConfig={viewabilityConfig}
         scrollsToTop={this.props.scrollsToTop !== undefined ? this.props.scrollsToTop : false}
       />
     );
