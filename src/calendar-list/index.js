@@ -149,9 +149,9 @@ class CalendarList extends Component {
       newrows.push(val);
     }
 
-    this.rows = [ ...newrows ];
+    this.rows = newrows;
     this.setState({
-      rows: this.rows,
+      rows: newrows,
     });
   }
 
@@ -195,11 +195,11 @@ class CalendarList extends Component {
         this.props.onVisibleMonthsChange(visibleMonths);
       }
 
-      this.rows = [ ...newrows ];
+      this.rows = newrows;
       this.hasScrolled = true;
 
       this.setState({
-        rows: this.rows,
+        rows: newrows,
       });
     }
   }
