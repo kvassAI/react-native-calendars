@@ -251,10 +251,7 @@ class Calendar extends Component {
           !(this.props.markedDates && this.props.markedDates[lastMonthOfDay])) {
         indicator = true;
       }
-    } else {
-      indicator = this.props.showLoadingIndicator;
-    }
-    else if (this.props.showLoadingIndicator) {
+    } else if (this.props.showLoadingIndicator) {
       indicator = this.props.showLoadingIndicator;
     }
     return (
